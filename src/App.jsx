@@ -23,7 +23,6 @@ class BST {
     const newNode = new BSTNode(value);
 
     if (this.root == null) {
-      console.log("rooting")
       this.root = newNode;
     } else {
       
@@ -65,6 +64,7 @@ function NodeVisualization(props) {
 }
 
 let nodes = [];
+let connections = [];
 
 function App() {
 
@@ -72,27 +72,49 @@ function App() {
   const visualisationRef = useRef(null);
   const [allNodes, setNodes] = useState([]);
 
-  const renderSubtree = (currentNode, currentLevel, currentXPos) => {
+  const renderSubtree = (currentNode, currentLevel, currentXPos, prevX, prevLevel) => {
 
     if (currentNode == null) return;
 
     //let newNodes = [...allNodes]
     nodes.push(<NodeVisualization 
-      key={nodes.length + 1} 
+      key={`nodes-${nodes.length + 1}`} 
       value={currentNode.value} 
       left={`${currentXPos * 100}%`}
       top={`${currentLevel * 200}px`} />)
-
     setNodes([]);
-    console.log(nodes)
+
+    if (prevX != undefined && prevLevel != undefined) {
+
+      const deltaX = (currentXPos - prevX) * document.body.clientWidth
+      const deltaY = (currentLevel - prevLevel) * 200
+      const length = Math.sqrt(deltaX ** 2 + deltaY ** 2)
+
+      const theta = Math.atan(deltaY / deltaX)  * (180/ Math.PI);
+      
+      const rotation = deltaX > 0 ? `rotateZ(${-90 - (90 - theta)}deg)` : `rotateZ(${theta}deg)`
+
+      connections.push(<div
+        key={`connections-${currentXPos}-${currentLevel}`}
+        style={{
+          left: `calc(${currentXPos * 100}% + 40px)`,
+          top: `calc(${currentLevel * 200}px + 40px)`,
+          width: `${length}px`,
+          transform: rotation
+        }}
+        className="connection"
+      >
+      </div>)
+
+    }
 
 
     // calculate x position:
     let xPosChange = 0.5 ** (currentLevel + 2);
 
-    renderSubtree(currentNode.right, currentLevel+1, currentXPos+xPosChange)
+    renderSubtree(currentNode.right, currentLevel+1, currentXPos+xPosChange, currentXPos, currentLevel)
 
-    renderSubtree(currentNode.left, currentLevel+1, currentXPos-xPosChange)
+    renderSubtree(currentNode.left, currentLevel+1, currentXPos-xPosChange, currentXPos, currentLevel)
     return;
 
   }
@@ -100,10 +122,11 @@ function App() {
   const renderBST = (bst) => {
 
     nodes = []
+    connections = []
     setNodes([])
     const currentNode = bst.root;
     if (currentNode == null) return;
-    renderSubtree(currentNode, 0, 0.5)
+    renderSubtree(currentNode, 0, 0.5, undefined, undefined)
 
   }
 
@@ -126,6 +149,11 @@ function App() {
 
   return (
     <div className="App">
+      <div className="visualisation-connections">
+        <div className="connection-wrapper">
+          {connections}
+        </div>
+      </div>
       <div className="visualisation" ref={visualisationRef}>
         {nodes}
       </div>
